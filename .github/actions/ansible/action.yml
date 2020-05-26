@@ -1,0 +1,12 @@
+name: "Setup Ansible"
+description: "Sets up Ansible in your GitHub Actions workflow."
+inputs:
+  ansible_command:
+    description: "The Ansible shell command"
+    required: true
+    default: 'ansible --version'
+runs:
+  using: "docker"
+  image: "./Dockerfile"
+  args:
+    - ${{ inputs.ansible_command }}
