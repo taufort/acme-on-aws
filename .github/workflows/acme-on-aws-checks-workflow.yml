@@ -1,0 +1,54 @@
+name: ACME on AWS checks workflow
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  terraform-checks:
+    name: Terraform checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 0.12.25
+      - name: Terraform format
+        id: terraform-fmt
+        run: terraform fmt -check -recursive
+      - name: Terraform init
+        id: terraform-init
+        run: terraform init -backend=false
+      - name: Terraform validate
+        id: terraform-validate
+        run: terraform validate
+
+  ansible-checks:
+    name: Ansible checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ansible
+    steps:
+      - uses: actions/checkout@v2
+      - name: Ansible lint 'get_tls_secrets.yml' playbook
+        uses: ./.github/actions/ansible
+        id: ansible-lint
+        with:
+          ansible_command: ansible-lint -Rv ansible/get_tls_secrets.yml
+        env:
+          ANSIBLE_CONFIG: "ansible/configuration/ansible.cfg"
+      - name: Ansible check 'get_tls_secrets.yml' playbook
+        uses: ./.github/actions/ansible
+        id: ansible-check
+        with:
+          ansible_command: ansible-playbook -v ansible/get_tls_secrets.yml --check
+        env:
+          ANSIBLE_CONFIG: "ansible/configuration/ansible.cfg"
+          AWS_REGION: "eu-west-1"
